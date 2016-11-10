@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>sma</title>
+		<style>
+            .container {
+                margin: 10px 10px 10px 10px;  
+                border: 5px solid #00bba3;
+                overflow: auto
+            }
+            img {
+                display: block;
+                float: left;
+                width: 40%
+            }
+            .text {
+                margin: 5px
+            }
+		</style>
+	</head>
+	<body>
+        <div style="max-width: 900px; margin: auto;">
+            <div class="container">
+                <h1>
+                    <a href="{{ url_for('sma') }}">sma</a>
+                </h1>  
+            </div>
+            {%  for mail in mails %}
+                <div class="container">
+                        <div class="text">
+                            <a href="/{{ mail['id']}}">
+                                <h2>{{ mail['subject'] }}</h2>
+                                <p>
+                                     Von: {{ mail['from'] }}<br>
+                                     An: {{ mail['to'] }}<br>
+                                     Datum: {{ mail['date'] }}
+                                </p>
+                            </a>
+                        </div>
+                </div>
+            {% endfor %}
+        </div>
+	</body>
+</html>
