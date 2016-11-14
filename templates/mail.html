@@ -50,9 +50,9 @@
                     <div class="container">
                             <div class="text">
                                     <p>
-                                        <a href="/get/{{attachment.meta.filename|safe }}" 
-                                            filename="{{attachment.meta.filename|safe }}">
-                                            {{attachment.meta.filename|safe }}
+                                        <a href="/{{ ID }}/{{ attachment.meta.filename|safe }}" 
+                                            download="{{ attachment.meta.filename|safe }}">
+                                            {{attachment.meta.filename|safe }} - {{ attachment.meta.type|safe }}
                                         </a>
                                     </p>
                             </div>

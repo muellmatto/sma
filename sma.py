@@ -6,6 +6,7 @@ import notmuch
 import flask
 import datetime
 import io
+import hashlib
 
 
 smaPath = os.path.dirname(os.path.realpath(__file__))
@@ -16,16 +17,35 @@ app = flask.Flask(__name__)
 
 app.secret_key = os.urandom(24)
 
+# test:1234
+# user:user
+users = {
+        'test': '7110eda4d09e062aa5e4a390b0a572ac0d2c0220',
+        'user': '12dea96fec20593566ab75692c9949596833adc9'
+        }
 
 
-
-## das hier muss dringend verbesser werden:
-attachments = []
+### notmuch handling
 
 def smaSearch(q):
     msgs = notmuch.Query(db, q).search_messages()
     msglist = list(msgs)[:20]
     return msglist
+
+
+def mailList(smaQuery):
+    search = smaSearch(smaQuery)
+    mails = [
+                {
+                    'filename': x.get_filename(), 
+                    'date': datetime.datetime.fromtimestamp(int(x.get_date())).strftime('%Y-%m-%d %H:%M:%S'),
+                    'id': x.get_message_id(),
+                    'subject': x.get_header('Subject'),
+                    'from': x.get_header('From'),
+                    'to': x.get_header('To')
+                } 
+                for x in search]
+    return mails
 
 
 def buildMailMap(ID):
@@ -44,7 +64,11 @@ def buildMailMap(ID):
     parts = [ 
                     {
                         'meta': mailMeta[i],
-                        'data': mail.get_part(i+1) 
+                        'data': mail.get_part(i+1)
+                    } 
+                    if mailMeta[i]['type'].startswith('text') else 
+                    {
+                        'meta': mailMeta[i],
                     } 
                     for i in range(len(mailMeta)) 
                 ]
@@ -55,11 +79,23 @@ def buildMailMap(ID):
     return mailMap
 
 
+def getAttachment(ID, filename):
+    search = smaSearch('id:' + str(ID))
+    mail = search[0]
+    filenames = [ x.get_filename() for x in mail.get_message_parts() ]
+    return mail.get_part( filenames.index(filename) +1) 
+
+
+
+### routes
+
+# favicon
 @app.route('/favicon.ico')
 def favicon():
     return flask.send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 
+# list of mails or search 
 @app.route('/', methods=['GET', 'POST'])
 def sma():
     if flask.request.method == 'GET':
@@ -69,27 +105,43 @@ def sma():
                     </form>
                 '''
     elif flask.request.method == 'POST':
-        # smaQuery = 'from:sarahrotthues'
-        # smaQuery = 'from:leifheit'
-        # smaQuery = ''
         smaQuery = flask.request.form['query']
-        search = smaSearch(smaQuery)
-        mails = [
-                    {
-                        'filename': x.get_filename(), 
-                        'date': datetime.datetime.fromtimestamp(int(x.get_date())).strftime('%Y-%m-%d %H:%M:%S'),
-                        'id': x.get_message_id(),
-                        'subject': x.get_header('Subject'),
-                        'from': x.get_header('From'),
-                        'to': x.get_header('To')
-                    } 
-                    for x in search]
+        mails = mailList(smaQuery)
         return flask.render_template("list.html", mails=mails)
 
 
+# login
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if flask.request.method == 'POST':
+        userName = flask.request.form['username']
+        passwordHash = hashlib.sha1( flask.request.form['password'].encode('utf-8') ).hexdigest()
+        print(userName, passwordHash)
+        if userName in users:
+            if passwordHash == users[userName]: 
+                flask.session.permanent = True
+                flask.session['username'] = userName
+                return flask.redirect(flask.url_for('sma'))
+    return '''
+        <form action="" method="post">
+            <p><input type=text name=username>
+            <p><input type=text name=password>
+            <p><input type=submit value=Login>
+        </form>
+    '''
+
+
+# logout 
+@app.route('/logout')
+def logout():
+    # remove the username from the session if it's there
+    flask.session.pop('username', None)
+    return flask.redirect(flask.url_for('sma'))
+
+
+## view an email
 @app.route('/<ID>')
 def showMail(ID):
-    global attachments
     mailMap = buildMailMap(ID)
     text = ""
     html = ""
@@ -119,27 +171,20 @@ def showMail(ID):
                     html = part['data'].decode('UTF-8','ignore')
             html = flask.Markup(html)
         else:
-            attachments.append(part)
-        #>>> f= open('test.pdf','bw')
-        #>>> f.write(m.get_part(5))
-        #2741550
-        #>>> f.close()
-    # store attachments so we do not have to rebuild mailMap for every download
-    # flask.session['attachments'] = attachments
+            if part['meta']['filename'] is not None:
+                attachments.append(part)
     return flask.render_template('mail.html',
                                     subject = mailMap['subject'], 
                                     html=html, 
-                                    text=text, 
+                                    text=text,
+                                    ID=ID, 
                                     attachments=attachments)
 
-
-@app.route('/get/<filename>')
-def getAttachment(filename):
-    global attachments
-    # attachments = flask.session['attachments']
-    for attachment in attachments:
-        if attachment['meta']['filename'] == str(filename):
-            return flask.send_file(io.BytesIO(attachment['data']))
+# attachment serving
+@app.route('/<ID>/<filename>')
+def downloadAttachment(ID, filename):
+    attachment = getAttachment(ID,filename) 
+    return flask.send_file(io.BytesIO(attachment))
 
 
 if __name__ == '__main__':
