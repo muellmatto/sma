@@ -15,7 +15,10 @@ db = notmuch.Database()
 
 app = flask.Flask(__name__)
 
-app.secret_key = os.urandom(24)
+
+## muss für unicorn nen fester wert sein, damit nicht jeder worker nen anderen key hat.
+# app.secret_key = os.urandom(24)
+app.secret_key = b'\x10\xe2A\xaa\xbb\x9f\xab\x19\x023\x01\x91\xc7G\xb3\xb8\xccw\x94\x7f\xe3\xee\x81\x0f'
 
 # test:1234
 # user:user
@@ -98,11 +101,14 @@ def favicon():
 # list of mails or search 
 @app.route('/', methods=['GET', 'POST'])
 def sma():
+    if not 'username' in flask.session:
+        return 'You are not logged in <br><a href="' + flask.url_for('login') + '">login</a>'
     if flask.request.method == 'GET':
         return '''  <form action="" method="post">
                         <p><input type=text name=query>
                         <p><input type=submit value=search!>
                     </form>
+                    <br><br><br><a href="/logout">logout</a>
                 '''
     elif flask.request.method == 'POST':
         smaQuery = flask.request.form['query']
@@ -116,11 +122,12 @@ def login():
     if flask.request.method == 'POST':
         userName = flask.request.form['username']
         passwordHash = hashlib.sha1( flask.request.form['password'].encode('utf-8') ).hexdigest()
-        print(userName, passwordHash)
+        # print(userName, passwordHash)
         if userName in users:
             if passwordHash == users[userName]: 
                 flask.session.permanent = True
                 flask.session['username'] = userName
+                # print('logged in')
                 return flask.redirect(flask.url_for('sma'))
     return '''
         <form action="" method="post">
@@ -142,6 +149,8 @@ def logout():
 ## view an email
 @app.route('/<ID>')
 def showMail(ID):
+    if not 'username' in flask.session:
+        return 'You are not logged in <br><a href="' + flask.url_for('login') + '">login</a>'
     mailMap = buildMailMap(ID)
     text = ""
     html = ""
@@ -152,22 +161,22 @@ def showMail(ID):
             try:
                 text = part['data'].decode(part['meta']['charset'])
             except:
-                print('guessing charset')
+                # print('guessing charset')
                 try:
                     text = part['data'].decode('ISO-8859-1')
                 except:
-                    print('forcing charset')
+                    # print('forcing charset')
                     text = part['data'].decode('UTF-8','ignore')
             text = flask.Markup(text.replace('\n', '<br>'))
         elif part['meta']['type'] == 'text/html':
             try:
                 html = part['data'].decode(part['meta']['charset'])
             except:
-                print('guessing charset')
+                # print('guessing charset')
                 try:
                     html = part['data'].decode('ISO-8859-1')
                 except:
-                    print('forcing charset')
+                    # print('forcing charset')
                     html = part['data'].decode('UTF-8','ignore')
             html = flask.Markup(html)
         else:
@@ -183,6 +192,8 @@ def showMail(ID):
 # attachment serving
 @app.route('/<ID>/<filename>')
 def downloadAttachment(ID, filename):
+    if not 'username' in flask.session:
+        return 'You are not logged in <br><a href="' + flask.url_for('login') + '">login</a>'
     attachment = getAttachment(ID,filename) 
     return flask.send_file(io.BytesIO(attachment))
 
