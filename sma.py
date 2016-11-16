@@ -7,14 +7,25 @@ import flask
 import datetime
 import io
 import hashlib
+import threading
 
 
 smaPath = os.path.dirname(os.path.realpath(__file__))
 
-db = notmuch.Database()
+db = None
 
 app = flask.Flask(__name__)
 
+
+##  reread database all the time
+def rereadDatabase():
+    global db
+    db = notmuch.Database()
+    print('db reread')
+    threading.Timer(60*60, rereadDatabase).start()
+
+
+rereadDatabase()
 
 ## muss für unicorn nen fester wert sein, damit nicht jeder worker nen anderen key hat.
 # app.secret_key = os.urandom(24)
