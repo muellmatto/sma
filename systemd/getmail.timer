@@ -1,0 +1,10 @@
+[Unit]
+Description=run getmail
+
+[Timer]
+OnBootSec=15min
+OnUnitActiveSec=12h
+Unit=getmail.sercvice
+
+[Install]
+WantedBy=multi-user.target

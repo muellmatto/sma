@@ -1,0 +1,12 @@
+[Unit]
+Description=getmail
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/getmail
+Type=oneshot
+User=mailer
+Group=users
+
+[Install]
+WantedBy=multi-user.target

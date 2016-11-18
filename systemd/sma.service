@@ -1,0 +1,11 @@
+[Unit]
+Description=sma
+After=network.target
+
+[Service]
+WorkingDirectory=/home/mailer/sma
+ExecStart=/usr/bin/gunicorn -b "0.0.0.0:80" -w4 -k gevent sma:app
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target

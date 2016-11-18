@@ -1,0 +1,18 @@
+[retriever]
+type = SimplePOP3SSLRetriever
+server = 
+username = 
+port = 995
+password = 
+
+
+[destination]
+type = MDA_external
+path = /usr/bin/notmuch
+arguments = ("insert", )
+
+
+[options]
+read_all = True
+delete = True
+delete_bigger_than = 15728640
