@@ -115,14 +115,16 @@ def sma():
     if not 'username' in flask.session:
         return 'You are not logged in <br><a href="' + flask.url_for('login') + '">login</a>'
     if flask.request.method == 'GET':
-        return '''  <form action="" method="post">
-                        <p><input type=text name=query>
-                        <p><input type=submit value=search!>
-                    </form>
-                    <br><br><br><a href="/logout">logout</a>
-                '''
+        return flask.render_template("search.html")
     elif flask.request.method == 'POST':
         smaQuery = flask.request.form['query']
+        for prefix in ['subject', 'from', 'to', 'attachment']:
+            if not flask.request.form[prefix] =='':
+                smaQuery += ' AND ' + prefix + ':' + flask.request.form[prefix]
+        if flask.request.form['dateFrom'] != '' or flask.request.form['dateTo'] != '':
+            smaQuery += ' AND date:' + flask.request.form['dateFrom'] + '..' + flask.request.form['dateTo']
+        if smaQuery.startswith(' AND'):
+            smaQuery = smaQuery[5:]
         mails = mailList(smaQuery)
         return flask.render_template("list.html", mails=mails)
 
