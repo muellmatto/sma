@@ -27,6 +27,7 @@
                     <a href="{{ url_for('sma') }}">sma</a>
                 </h1>  
             </div>
+            <form action='/delete' method='post' onsubmit="return confirm('Bist du dir sicher?');">
             {%  for mail in mails %}
                 <div class="container">
                         <div class="text">
@@ -38,9 +39,14 @@
                                      Datum: {{ mail['date'] }}
                                 </p>
                             </a>
+                            <h1>
+                                <input type='checkbox' name='{{ mail['id'] }}' />🗑
+                            </h1>
                         </div>
                 </div>
             {% endfor %}
+            <p><input type=submit value='delete selected mails'>
+            </form>
         </div>
 	</body>
 </html>
