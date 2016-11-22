@@ -129,6 +129,34 @@ def sma():
         return flask.render_template("list.html", mails=mails)
 
 
+# delete an email
+@app.route('/delete', methods=['GET', 'POST'])
+def delete():
+    if flask.request.method == 'POST':
+        # We need rw access,
+        # maybe its blocked
+        while True:
+            try:
+                db_rw = notmuch.Database(mode=1)
+                break
+            except:
+                # try harder :)
+                pass
+        # db is now in rw mode!
+        for mailId in flask.request.form:
+            for filename in smaSearch('id:' + mailId)[0].get_filenames():
+                print(filename)
+                db_rw.remove_message(filename)
+                os.remove(filename)
+        # we do not need rw access anymore
+        db_rw.close()
+        del db_rw
+        # reload database!
+        global db
+        db = notmuch.Database()
+    return flask.redirect(flask.url_for('sma'))
+
+
 # login
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -201,6 +229,7 @@ def showMail(ID):
                                     text=text,
                                     ID=ID, 
                                     attachments=attachments)
+
 
 # attachment serving
 @app.route('/<ID>/<filename>')
