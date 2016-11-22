@@ -67,24 +67,40 @@ def buildMailMap(ID):
     if len(search) == 0:
         return 'something went wrong!'
     mail = search[0]
-    mailMeta = [ 
+    try:
+        mailMeta = [ 
+                        {
+                            'type': x.get_content_type(),
+                            'charset': x.get_content_charset(),
+                            'disposition': x.get_content_disposition(),
+                            'filename': x.get_filename()
+                        }
+                        for x in mail.get_message_parts()]
+        parts = [ 
+                        {
+                            'meta': mailMeta[i],
+                            'data': mail.get_part(i+1)
+                        } 
+                        if mailMeta[i]['type'].startswith('text') else 
+                        {
+                            'meta': mailMeta[i],
+                        } 
+                        for i in range(len(mailMeta)) 
+                    ]
+    except:
+        with open(mail.get_filename(), 'rb') as rawMail:
+            rawData = rawMail.read()
+        parts = [
                     {
-                        'type': x.get_content_type(),
-                        'charset': x.get_content_charset(),
-                        'disposition': x.get_content_disposition(),
-                        'filename': x.get_filename()
+                        'meta':
+                                {
+                                    'filename': None,
+                                    'disposition': None,
+                                    'charset': 'utf-8',
+                                    'type': 'text/plain'
+                                },
+                                'data': rawData
                     }
-                    for x in mail.get_message_parts()]
-    parts = [ 
-                    {
-                        'meta': mailMeta[i],
-                        'data': mail.get_part(i+1)
-                    } 
-                    if mailMeta[i]['type'].startswith('text') else 
-                    {
-                        'meta': mailMeta[i],
-                    } 
-                    for i in range(len(mailMeta)) 
                 ]
     mailMap = {
                 'subject': mail.get_header('subject'),
@@ -145,7 +161,7 @@ def login():
     return '''
         <form action="" method="post">
             <p><input type=text name=username>
-            <p><input type=text name=password>
+            <p><input type=password name=password>
             <p><input type=submit value=Login>
         </form>
     '''
