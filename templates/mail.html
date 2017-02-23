@@ -50,7 +50,7 @@
                     <div class="container">
                             <div class="text">
                                     <p>
-                                        <a href="/{{ ID }}/{{ attachment.meta.filename|safe }}" 
+                                        <a href="/{{ ID }}/{{ attachment.meta.filename|urlencode }}" 
                                             download="{{ attachment.meta.filename|safe }}">
                                             {{attachment.meta.filename|safe }} - {{ attachment.meta.type|safe }}
                                         </a>
