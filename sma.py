@@ -1,50 +1,55 @@
 #!/usr/bin/env python3
 
-import os
-import poplib
-import notmuch
+from configparser import ConfigParser
+from datetime import datetime
+from io import BytesIO
+from os import remove
+from os.path import dirname, join, realpath
+from sys import exit
+
 import flask
-import datetime
-import io
-import hashlib
-import threading
+import notmuch
 
 
-smaPath = os.path.dirname(os.path.realpath(__file__))
+SMA_PATH = dirname(realpath(__file__))
+
+SMA_CONFIG_PATH = join( SMA_PATH, 'sma.conf')
 
 db = None
 
 app = flask.Flask(__name__)
 
 
-##  reread database all the time
-def rereadDatabase():
-    global db
-    db = notmuch.Database()
-    print('db reread')
-    threading.Timer(60*60, rereadDatabase).start()
+# -----------------------------------------------------
+# read config 
+# -----------------------------------------------------
 
+try:
+    sma_config = ConfigParser()
+    sma_config.read(SMA_CONFIG_PATH)
+    ADMIN = sma_config['SMA']['admin']
+    PASSWORD = sma_config['SMA']['password']
+    SMA_PORT = int(sma_config['SMA']['port'])
+    MAILDIR = sma_config['SMA']['maildir']
+    app.secret_key = sma_config['SMA']['secret']
+except:
+    print('please check configfile: ', SMA_CONFIG_PATH)
+    exit(1)
 
-rereadDatabase()
-
-## muss für unicorn nen fester wert sein, damit nicht jeder worker nen anderen key hat.
-# app.secret_key = os.urandom(24)
-app.secret_key = b'\x10\xe2A\xaa\xbb\x9f\xab\x19\x023\x01\x91\xc7G\xb3\xb8\xccw\x94\x7f\xe3\xee\x81\x0f'
-
-# test:1234
-# user:user
-users = {
-        'test': '7110eda4d09e062aa5e4a390b0a572ac0d2c0220',
-        'user': '12dea96fec20593566ab75692c9949596833adc9'
-        }
 
 
 ### notmuch handling
 
 def smaSearch(q):
-    msgs = notmuch.Query(db, q).search_messages()
-    msglist = list(msgs)[:20]
+    #with notmuch.Database(path = '/home/matto/Workspace/data/maildirs') as db:
+    db = notmuch.Database(path = '/home/matto/Workspace/data/maildirs') 
+    query = notmuch.Query(db, q)
+    query.set_sort(notmuch.Query.SORT.NEWEST_FIRST)
+    msgs = query.search_messages()
+    msglist = list(msgs)[:100]
+    # db.close()
     return msglist
+    # This is dirty! We are NOT closing the database .... o.0
 
 
 def mailList(smaQuery):
@@ -52,7 +57,7 @@ def mailList(smaQuery):
     mails = [
                 {
                     'filename': x.get_filename(), 
-                    'date': datetime.datetime.fromtimestamp(int(x.get_date())).strftime('%Y-%m-%d %H:%M:%S'),
+                    'date': datetime.fromtimestamp(int(x.get_date())).strftime('%Y-%m-%d %H:%M:%S'),
                     'id': x.get_message_id(),
                     'subject': x.get_header('Subject'),
                     'from': x.get_header('From'),
@@ -122,7 +127,7 @@ def getAttachment(ID, filename):
 # favicon
 @app.route('/favicon.ico')
 def favicon():
-    return flask.send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+    return flask.send_from_directory(join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 
 # list of mails or search 
@@ -141,6 +146,7 @@ def sma():
             smaQuery += ' AND date:' + flask.request.form['dateFrom'] + '..' + flask.request.form['dateTo']
         if smaQuery.startswith(' AND'):
             smaQuery = smaQuery[5:]
+        print(smaQuery)
         mails = mailList(smaQuery)
         return flask.render_template("list.html", mails=mails)
 
@@ -149,27 +155,12 @@ def sma():
 @app.route('/delete', methods=['GET', 'POST'])
 def delete():
     if flask.request.method == 'POST':
-        # We need rw access,
-        # maybe its blocked
-        while True:
-            try:
-                db_rw = notmuch.Database(mode=1)
-                break
-            except:
-                # try harder :)
-                pass
-        # db is now in rw mode!
-        for mailId in flask.request.form:
-            for filename in smaSearch('id:' + mailId)[0].get_filenames():
-                print(filename)
-                db_rw.remove_message(filename)
-                os.remove(filename)
-        # we do not need rw access anymore
-        db_rw.close()
-        del db_rw
-        # reload database!
-        global db
-        db = notmuch.Database()
+        with notmuch.Database(path = '/home/matto/Workspace/data/maildirs' , mode=1) as db_rw:
+            for mailId in flask.request.form:
+                for filename in smaSearch('id:' + mailId)[0].get_filenames():
+                    print(filename)
+                    db_rw.remove_message(filename)
+                    remove(filename)
     return flask.redirect(flask.url_for('sma'))
 
 
@@ -177,15 +168,13 @@ def delete():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if flask.request.method == 'POST':
-        userName = flask.request.form['username']
-        passwordHash = hashlib.sha1( flask.request.form['password'].encode('utf-8') ).hexdigest()
-        # print(userName, passwordHash)
-        if userName in users:
-            if passwordHash == users[userName]: 
-                flask.session.permanent = True
-                flask.session['username'] = userName
-                # print('logged in')
-                return flask.redirect(flask.url_for('sma'))
+        user_name = flask.request.form['username']
+        user_password = flask.request.form['password']
+        if user_name == ADMIN and user_password == PASSWORD:
+            flask.session.permanent = True
+            flask.session['username'] = user_name
+            # print('logged in')
+            return flask.redirect(flask.url_for('sma'))
     return '''
         <form action="" method="post">
             <p><input type=text name=username>
@@ -253,8 +242,8 @@ def downloadAttachment(ID, filename):
     if not 'username' in flask.session:
         return 'You are not logged in <br><a href="' + flask.url_for('login') + '">login</a>'
     attachment = getAttachment(ID,filename) 
-    return flask.send_file(io.BytesIO(attachment))
+    return flask.send_file(BytesIO(attachment))
 
 
 if __name__ == '__main__':
-    app.run(host='localhost', port=64004)
+    app.run(host='localhost', port=SMA_PORT, debug=True)

@@ -40,13 +40,25 @@
                                 </p>
                             </a>
                             <h1>
-                                <input type='checkbox' name='{{ mail['id'] }}' />🗑
+                                <input class="trash" type='checkbox' name='{{ mail['id'] }}' />🗑
                             </h1>
                         </div>
                 </div>
             {% endfor %}
             <p><input type=submit value='delete selected mails'>
             </form>
+            <br> <button onclick="toggle(true)">alle markieren</button>
+            <br> <button onclick="toggle(false)">keine markieren</button>
+            <script>
+                function toggle(state) {
+                    var switches = document.getElementsByTagName('input');
+                    for(var i=0; i < switches.length; i++) {
+                        if (switches[i].type == 'checkbox') {
+                            switches[i].checked = state;
+                        }
+                    };
+                }
+            </script>
         </div>
 	</body>
 </html>
