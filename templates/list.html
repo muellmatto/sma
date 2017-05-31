@@ -3,12 +3,18 @@
 	<head>
 		<meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+        <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+        <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
 		<title>sma</title>
 		<style>
             .container {
                 margin: 10px 10px 10px 10px;  
                 border: 5px solid #00bba3;
                 overflow: auto
+            }
+            a {
+                text-decoration: None;
             }
             img {
                 display: block;
@@ -18,43 +24,90 @@
             .text {
                 margin: 5px
             }
+            .demo-list-control {
+              width: auto;
+            }
+            .demo-list-radio {
+                display: inline;
+            }
+            .details {
+                padding-bottom: 0;
+                padding-top: 0.5rem;
+                padding-left: 5rem;
+                min-height: 0rem;
+                font-size: small;
+            }
+            .title {
+                padding-bottom: 0;
+                min-height: 1.6rem;
+                line-height: 1.5rem;
+                font-weight: 500;
+            }
 		</style>
 	</head>
 	<body>
+
+
+
+
+
+
         <div style="max-width: 900px; margin: auto;">
-            <div class="container">
-                <h1>
-                    <a href="{{ url_for('sma') }}">sma</a>
-                </h1>  
-            </div>
+            <br>
+            <br>
+            <a href="{{ url_for('sma') }}" class="mdl-button mdl-js-button mdl-button--raised">Zurück zur Suche</a>
+            <br>
+            <hr>
             <form action='/delete' method='post' onsubmit="return confirm('Bist du dir sicher?');">
+
+            <ul class="demo-list-control mdl-list">
             {%  for mail in mails %}
-                <div class="container">
-                        <div class="text">
-                            <a href="/{{ mail['id']}}">
-                                <h2>{{ mail['subject'] }}</h2>
-                                <p>
-                                     Von: {{ mail['from'] }}<br>
-                                     An: {{ mail['to'] }}<br>
-                                     Datum: {{ mail['date'] }}
-                                </p>
-                            </a>
-                            <h1>
-                                <input class="trash" type='checkbox' name='{{ mail['id'] }}' />🗑
-                            </h1>
-                        </div>
-                </div>
+
+                <a href="/{{ mail['id']}}">
+                    <li class="mdl-list__item title">
+                        <span class="mdl-list__item-primary-content">
+                            <i class="material-icons  mdl-list__item-avatar">email</i>
+                            <span>{{ mail['subject'] }}</span>
+                        </span>
+                        <i class="material-icons  mdl-list__item-avatar">delete</i>
+                        &emsp;
+                        <span class="mdl-list__item-secondary-action">
+                            <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="checkbox-{{ mail['id'] }}">
+                                <input type="checkbox" id="checkbox-{{ mail['id' ]}}" class="mdl-checkbox__input" name="{{ mail['id'] }}">
+                            </label>
+                        </span>
+                    </li>
+                </a>
+                <li class="mdl-list__item details">
+                    Von: {{ mail['from'] }}
+                </li>
+                <li class="mdl-list__item details">
+                    An: {{ mail['to'] }}<br>
+                </li>
+                <li class="mdl-list__item details">
+                    Datum: {{ mail['date'] }}
+                </li>
+
+
             {% endfor %}
-            <p><input type=submit value='delete selected mails'>
+            </ul>
+                <input type=submit value='ausgewählte löschen' class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent">
             </form>
-            <br> <button onclick="toggle(true)">alle markieren</button>
-            <br> <button onclick="toggle(false)">keine markieren</button>
+            <br>
+            <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" onclick="toggle(true)">alle markieren</button>
+            <br> 
+            <br> 
+            <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" onclick="toggle(false)">keine markieren</button>
+            <br> 
+            <br> 
             <script>
                 function toggle(state) {
-                    var switches = document.getElementsByTagName('input');
+                    var switches = document.getElementsByClassName('mdl-js-checkbox');
                     for(var i=0; i < switches.length; i++) {
-                        if (switches[i].type == 'checkbox') {
-                            switches[i].checked = state;
+                        if (state) {
+                            switches[i].MaterialCheckbox.check();
+                        } else {
+                            switches[i].MaterialCheckbox.uncheck();
                         }
                     };
                 }

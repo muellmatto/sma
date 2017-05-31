@@ -175,13 +175,7 @@ def login():
             flask.session['username'] = user_name
             # print('logged in')
             return flask.redirect(flask.url_for('sma'))
-    return '''
-        <form action="" method="post">
-            <p><input type=text name=username>
-            <p><input type=password name=password>
-            <p><input type=submit value=Login>
-        </form>
-    '''
+    return flask.render_template("login.html")
 
 
 # logout 
@@ -242,7 +236,7 @@ def downloadAttachment(ID, filename):
     if not 'username' in flask.session:
         return 'You are not logged in <br><a href="' + flask.url_for('login') + '">login</a>'
     attachment = getAttachment(ID,filename) 
-    return flask.send_file(BytesIO(attachment))
+    return flask.send_file(BytesIO(attachment), attachment_filename=filename, as_attachment=True)
 
 
 if __name__ == '__main__':
