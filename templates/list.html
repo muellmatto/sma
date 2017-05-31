@@ -27,6 +27,7 @@
                     <a href="{{ url_for('sma') }}">sma</a>
                 </h1>  
             </div>
+            <form action='/delete' method='post' onsubmit="return confirm('Bist du dir sicher?');">
             {%  for mail in mails %}
                 <div class="container">
                         <div class="text">
@@ -38,9 +39,26 @@
                                      Datum: {{ mail['date'] }}
                                 </p>
                             </a>
+                            <h1>
+                                <input class="trash" type='checkbox' name='{{ mail['id'] }}' />🗑
+                            </h1>
                         </div>
                 </div>
             {% endfor %}
+            <p><input type=submit value='delete selected mails'>
+            </form>
+            <br> <button onclick="toggle(true)">alle markieren</button>
+            <br> <button onclick="toggle(false)">keine markieren</button>
+            <script>
+                function toggle(state) {
+                    var switches = document.getElementsByTagName('input');
+                    for(var i=0; i < switches.length; i++) {
+                        if (switches[i].type == 'checkbox') {
+                            switches[i].checked = state;
+                        }
+                    };
+                }
+            </script>
         </div>
 	</body>
 </html>
