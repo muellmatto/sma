@@ -41,8 +41,8 @@ except:
 ### notmuch handling
 
 def smaSearch(q):
-    #with notmuch.Database(path = '/home/matto/Workspace/data/maildirs') as db:
-    db = notmuch.Database(path = '/home/matto/Workspace/data/maildirs') 
+    #with notmuch.Database(path = MAILDIR) as db:
+    db = notmuch.Database(path = MAILDIR) 
     query = notmuch.Query(db, q)
     query.set_sort(notmuch.Query.SORT.NEWEST_FIRST)
     msgs = query.search_messages()
@@ -155,7 +155,7 @@ def sma():
 @app.route('/delete', methods=['GET', 'POST'])
 def delete():
     if flask.request.method == 'POST':
-        with notmuch.Database(path = '/home/matto/Workspace/data/maildirs' , mode=1) as db_rw:
+        with notmuch.Database(path = MAILDIR , mode=1) as db_rw:
             for mailId in flask.request.form:
                 for filename in smaSearch('id:' + mailId)[0].get_filenames():
                     print(filename)
@@ -240,4 +240,4 @@ def downloadAttachment(ID, filename):
 
 
 if __name__ == '__main__':
-    app.run(host='localhost', port=SMA_PORT, debug=True)
+    app.run(host='0.0.0.0', port=SMA_PORT, debug=True)
