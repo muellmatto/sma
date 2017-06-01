@@ -3,12 +3,16 @@
 	<head>
 		<meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+        <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+        <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
 		<title>sma</title>
 		<style>
             .container {
                 margin: 10px 10px 10px 10px;  
-                border: 5px solid #00bba3;
-                overflow: auto
+                border: 5px solid white;
+                overflow: auto;
+                box-shadow: 0px 0px 10px 1px #888888;
             }
             img {
                 display: block;
@@ -23,9 +27,10 @@
 	<body>
         <div style="max-width: 900px; margin: auto;">
             <div class="container">
-                <h1>
-                    <a href="{{ url_for('sma') }}">sma</a>
-                </h1>  
+                <br>
+                <a href="{{ url_for('sma') }}" class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored">Zurück zur Suche</a>
+                <br>
+                <br>
             </div>
                 <div class="container">
                         <div class="text">
@@ -60,7 +65,12 @@
                 {% endfor %}
         </div>
             <form action='/delete' method='post' onsubmit="return confirm('Bist du dir sicher?');">
-                <p><input type=submit name="{{ ID }}" value='delete mail'></p>
+                <div class="container">
+                    <br>
+                    <input type=submit name="{{ ID }}" value='delete mail' class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent">
+                    <br>
+                    <br>
+                </div>
             </form>
 	</body>
 </html>
